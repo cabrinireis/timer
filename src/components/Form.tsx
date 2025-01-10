@@ -1,17 +1,18 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { differenceInSeconds } from "date-fns";
 import { Play } from "phosphor-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
 import { z } from "zod";
 const formValidationSchema = z.object({
   task: z.string().min(1, "Informe a tarefa"),
   minutesAmount: z.number().min(5).max(60),
 });
-type NewCycleFormData = z.infer<typeof formValidationSchema>;
 interface Cycle {
   id: string;
   task: string;
   minutesAmount: number;
+  startDate: Date
 }
 export const Form = () => {
   const [cycles, setCycles] = useState<Cycle[]>([]);
@@ -28,6 +29,7 @@ export const Form = () => {
       id,
       task: data.task,
       minutesAmount: data.minutesAmount,
+      startDate: new Date()
     };
 
     setCycles((state) => [...state, newCycle]);
@@ -37,7 +39,14 @@ export const Form = () => {
   }
 
   const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId);
-
+  useEffect(() => {
+    if(activeCycle) {
+      setInterval(() => {
+        setAmountSecondsPassed(differenceInSeconds(new Date(), activeCycle.startDate))
+      })
+    }
+  },[activeCycle])
+  
   const totalSeconds = activeCycle ? activeCycle.minutesAmount * 60 : 0;
   const currentSeconds = activeCycle ? totalSeconds - amountSecondsPassed : 0;
 
