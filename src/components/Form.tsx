@@ -2,17 +2,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { differenceInSeconds } from "date-fns";
 import { Play, Stop } from "phosphor-react";
 import { useEffect, useState } from "react";
-import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
+import { FieldValues, useForm } from "react-hook-form";
 import { z } from "zod";
 const formValidationSchema = z.object({
   task: z.string().min(1, "Informe a tarefa"),
-  minutesAmount: z.number().min(5).max(60),
+  minutesAmount: z.number().min(1).max(60),
 });
 interface Cycle {
   id: string;
   task: string;
   minutesAmount: number;
-  startDate: Date
+  startDate: Date,
+  finishedDate?: Date
 }
 export const Form = () => {
   const [cycles, setCycles] = useState<Cycle[]>([]);
@@ -39,13 +40,7 @@ export const Form = () => {
   }
 
   const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId);
-  useEffect(() => {
-    if(activeCycle) {
-      setInterval(() => {
-        setAmountSecondsPassed(differenceInSeconds(new Date(), activeCycle.startDate))
-      })
-    }
-  },[activeCycle])
+
   
   const totalSeconds = activeCycle ? activeCycle.minutesAmount * 60 : 0;
   const currentSeconds = activeCycle ? totalSeconds - amountSecondsPassed : 0;
@@ -59,9 +54,43 @@ export const Form = () => {
   const task = watch("task");
   const isDisableSubmit = !task;
 
+  useEffect(() => {
+    let interval: number
+
+    if (activeCycle) {
+      interval = setInterval(() => {
+        const secondsDifference = differenceInSeconds(
+          new Date(),
+          activeCycle.startDate,
+        )
+
+        if (secondsDifference >= totalSeconds) {
+          setCycles((state) =>
+            state.map((cycle) => {
+              if (cycle.id === activeCycleId) {
+                return { ...cycle, finishedDate: new Date() }
+              } else {
+                return cycle
+              }
+            }),
+          )
+
+          setAmountSecondsPassed(totalSeconds)
+          clearInterval(interval)
+        } else {
+          setAmountSecondsPassed(secondsDifference)
+        }
+      }, 1000)
+    }
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [activeCycle, totalSeconds, activeCycleId])
+
   function handleInterruptCycle() {
-    setCycles(
-      cycles.map((cycle) => {
+    setCycles((state) =>
+state.map((cycle) => {
         if (cycle.id === activeCycleId) {
           return { ...cycle, interruptedDate: new Date() }
         } else {
