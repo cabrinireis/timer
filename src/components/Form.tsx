@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { differenceInSeconds } from "date-fns";
-import { Play } from "phosphor-react";
+import { Play, Stop } from "phosphor-react";
 import { useEffect, useState } from "react";
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -58,6 +58,19 @@ export const Form = () => {
 
   const task = watch("task");
   const isDisableSubmit = !task;
+
+  function handleInterruptCycle() {
+    setCycles(
+      cycles.map((cycle) => {
+        if (cycle.id === activeCycleId) {
+          return { ...cycle, interruptedDate: new Date() }
+        } else {
+          return cycle
+        }
+      }),
+    )
+    setActiveCycleId(null)
+  }
   return (
     <form
       className="flex flex-col items-center gap-12"
@@ -70,6 +83,7 @@ export const Form = () => {
           className="bg-transparent h-10 border-0 border-b-2 flex-1 border-gray-500 font-bold text-xl px-2  text-gray-100 focus:border-b-green-500 focus:[box-shadow:none] focus:outline-none"
           id="task"
           type="text"
+          disabled={!!activeCycleId}
           {...register("task")}
         />
 
@@ -78,6 +92,7 @@ export const Form = () => {
           className="bg-transparent h-10 border-0 border-b-2 w-[4rem] border-gray-500 font-bold text-xl px-2 text-gray-100 focus:border-b-green-500 focus:[box-shadow:none] focus:outline-none -moz-appearance:textfield"
           type="number"
           id="minutesAmount"
+          disabled={!!activeCycleId}
           {...register("minutesAmount", { valueAsNumber: true })}
         />
 
@@ -93,7 +108,7 @@ export const Form = () => {
         <span className="bg-gray-700 py-16 px-4 rounded-lg">{seconds[0]}</span>
         <span className="bg-gray-700 py-16 px-4 rounded-lg">{seconds[1]}</span>
       </div>
-
+      {!activeCycleId ?
       <button
         className="w-full border-0 p-4 rounded-lg flex items-center justify-center gap-2 font-bold cursor-pointer bg-green-500 text-white hover:bg-green-700 disabled:bg-gray-500"
         disabled={isDisableSubmit}
@@ -102,6 +117,15 @@ export const Form = () => {
         <Play size={24} />
         Começar
       </button>
+      :
+      <button
+        className="w-full border-0 p-4 rounded-lg flex items-center justify-center gap-2 font-bold cursor-pointer bg-red-500 text-white hover:bg-red-700"
+        onClick={handleInterruptCycle}
+      >
+        <Stop size={24} />
+        Stop
+      </button>
+      }
     </form>
   );
 };
